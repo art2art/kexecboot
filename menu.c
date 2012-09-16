@@ -28,16 +28,15 @@
 kx_menu *
 menu_create(void) {
 	kx_menu *menu;
-	
+
 	menu = malloc(sizeof *menu);
 	if (menu == NULL) {
 		DPRINTF("Can\'t allocate menu");
 		return NULL;
 	}
 
-	
 	menu->head_lvls = TAILQ_HEAD_INITIALIZER(menu->head_lvls);
-	TAILQ_INIT(menu->head_lvls);
+	TAILQ_INIT(&menu->head_lvls);
 	
 	menu->top = NULL;
 	menu->current = NULL;
@@ -52,9 +51,8 @@ menu_get_next_id(kx_menu *menu) {
 
 kx_menu_level *
 menu_level_create(kx_menu *menu, kx_menu_level *parent) {
-	
 	kx_menu_level *level;
-	struct kx_head head;
+	TAILQ_HEAD(kx_head, kx_menu_level) *head;
 	
 	if (!menu) return NULL;
 
@@ -64,17 +62,17 @@ menu_level_create(kx_menu *menu, kx_menu_level *parent) {
 		return NULL;
 	}
 	
-	head = menu->head_lvls;
+	head = &menu->head_lvls;
 	level->parent = parent;
 	if (!menu->current)
 		menu->current = level;
 	
-	if (TAILQ_EMPTY(&head)) {
-		TAILQ_INSERT_HEAD(&head, level, links);
+	if (TAILQ_EMPTY(head)) {
+		TAILQ_INSERT_HEAD(head, level, links);
 		return level;
 	}
 	
-	TAILQ_INSERT_TAIL(&head, level, links);	
+	TAILQ_INSERT_TAIL(head, level, links);	
 	return level;
 }
 
@@ -88,14 +86,14 @@ menu_item_add( kx_menu_level *level,
 			   kx_menu_level *submenu) {
 	
 	kx_menu_item *item;
-	struct kx_head head;
+	TAILQ_HEAD(kx_head, kx_menu_item) *head;
 	
 	if (!level)
 		return NULL;
 	
 	item = malloc(sizeof *item);
 	if (NULL == item) {
-		DPRINTF("Can't allocate menu level");
+		DPRINTI("Can't allocate menu level");
 		return NULL;
 	}
 
@@ -104,22 +102,12 @@ menu_item_add( kx_menu_level *level,
 	item->id = id;
 	item->submenu = submenu;
 
-	head = level->head_itms;
-	TAILQ_INSERT_TAIL(&head, item, links);
+	head = &level->head_itms;
+	TAILQ_INSERT_TAIL(head, item, links);
 	if (!level->current) {
 		level->current = item;
 	}
 	
-	/* level->list[level->count] = item; */
-
-	/* If there is no current item yet then make this item current */
-	/* if (!level->current) { */
-	/* 	level->current = item; */
-	/* 	level->current_no = level->count; */
-	/* } */
-
-	/* ++level->count; */
-
 	return item;
 }
 
@@ -128,22 +116,22 @@ menu_destroy(kx_menu *menu, int destroy_data)
 {
 	kx_menu_level *ml;
 	kx_menu_item *mi;
-	kx_list hl, hi;
+	struct kx_head *hl, *hi;
 
-	hl = menu->head_lvls;
-	while ( !TAILQ_EMPTY(&hl) ) {
-		ml = TAILQ_FIRST(&hl);
-		hi = ml->head_itms;
-		while ( !TAILQ_EMPTY(&hi) ) {
-			mi = TAILQ_FIRST(&hi);
+	hl = &menu->head_lvls;
+	while ( !TAILQ_EMPTY(hl) ) {
+		ml = TAILQ_FIRST(hl);
+		hi = &ml->head_itms;
+		while ( !TAILQ_EMPTY(hi) ) {
+			mi = TAILQ_FIRST(hi);
 			dispose(mi->label);
 			dispose(mi->description);
 			if (destroy_data && mi->data)
 				free(mi->data);
-			TAILQ_REMOVE(mi, links);
+			TAILQ_REMOVE(hi, mi, links);
 			free(mi);
 		}
-		TAILQ_REMOVE(ml, links);
+		TAILQ_REMOVE(hl, ml, links);
 		free(ml);
 	}
 }
@@ -152,17 +140,17 @@ menu_destroy(kx_menu *menu, int destroy_data)
 void
 menu_item_select(kx_menu *menu, int direction) {
 	kx_menu_level *ml;
-	struct kx_head head;
+	TAILQ_HEAD(kx_head, kx_menu_item) *head;
 
 	ml = menu->current;
-	head = menu->current->head_itms;
+	head = &ml->head_itms;
 	
 	if (direction == 0) 
-		ml->current = TAILQ_FIRST(&head);
+		ml->current = TAILQ_FIRST(head);
 	else if (direction > 0) 
 		ml->current = TAILQ_NEXT(ml->current, links);
 	else 
-		ml->current = TAILQ_PREV(ml->current, links);
+		ml->current = TAILQ_PREV(ml->current, kx_head, links);
 }
 
 /* Select no'th item in current level */
@@ -170,14 +158,14 @@ kx_menu_dim
 menu_item_select_by_no(kx_menu *menu, int no) {
 	kx_menu_level *ml;
 	kx_menu_item *tmp;
-	struct kx_head head;
+	TAILQ_HEAD(kx_head, kx_menu_item) *head;
 	int i;
 	
 	ml = menu->current;
-	head = ml->head_itms;
+	head = &ml->head_itms;
 
 	i = 0;
-	TAILQ_FOREACH(tmp, &head, links) {
+	TAILQ_FOREACH(tmp, head, links) {
 		if (i == no) {
 			i = -1;
 			ml->current = tmp;
@@ -190,7 +178,6 @@ menu_item_select_by_no(kx_menu *menu, int no) {
 	
 	return no;
 }
-
 
 inline void
 menu_item_set_data(kx_menu_item *item, void *data) {

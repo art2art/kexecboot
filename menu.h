@@ -41,7 +41,6 @@ typedef struct kx_menu_level {
 	kx_menu_dim current_no;		/* Current active item No */
 	kx_menu_item *current;		/* Current active item */
 	struct kx_menu_level *parent;	/* Upper menu level */
-
 	TAILQ_ENTRY(kx_menu_level) links;
 	TAILQ_HEAD(kx_head, kx_menu_item) head_itms;
 	
@@ -51,7 +50,6 @@ typedef struct kx_menu {
 	kx_menu_id next_id;
 	kx_menu_level *top;			/* Main menu */
 	kx_menu_level *current;		/* Current active menu */
-	
 	TAILQ_HEAD(kx_head, kx_menu_level) head_lvls;
 } kx_menu;
 
