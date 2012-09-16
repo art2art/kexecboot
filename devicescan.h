@@ -57,7 +57,7 @@ struct bootconf_t {
 	enum ui_type_t ui;			/* UI (graphics/text) */
 	int debug;					/* Use debugging */
 
-	struct boot_item_t **list;	/* Boot items list */
+	struct boot_item_t **list;	/* Boot items list  */
 	unsigned int size;			/* Count of boot items in list */
 	unsigned int fill;			/* Filled items count */
 };

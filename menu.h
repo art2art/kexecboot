@@ -20,6 +20,7 @@
 #define _HAVE_MENU_H_
 
 #include "config.h"
+#include <sys/queue.h>
 
 typedef int kx_menu_id;
 typedef unsigned int kx_menu_dim;
@@ -27,56 +28,66 @@ typedef unsigned int kx_menu_dim;
 struct kx_menu;
 struct kx_menu_level;
 
-typedef struct {
+typedef struct kx_menu_item {
 	kx_menu_id id;				/* Unique id */
 	char *label;				/* Item label */
 	char *description;			/* Item description */
 	void *data;					/* User driven data */
 	struct kx_menu_level *submenu;	/* Sub-menu if any */
+	TAILQ_ENTRY(kx_menu_item) links;
 } kx_menu_item;
 
 typedef struct kx_menu_level {
-	kx_menu_dim size;			/* Allocated items count */
-	kx_menu_dim count;			/* Filled items count */
 	kx_menu_dim current_no;		/* Current active item No */
 	kx_menu_item *current;		/* Current active item */
 	struct kx_menu_level *parent;	/* Upper menu level */
-	kx_menu_item **list;		/* Menu items array */
+
+	TAILQ_ENTRY(kx_menu_level) links;
+	TAILQ_HEAD(kx_head, kx_menu_item) head_itms;
+	
 } kx_menu_level;
 
 typedef struct kx_menu {
 	kx_menu_id next_id;
-	kx_menu_dim size;			/* Allocated items count */
-	kx_menu_dim count;			/* Filled items count */
 	kx_menu_level *top;			/* Main menu */
 	kx_menu_level *current;		/* Current active menu */
-	kx_menu_level **list;		/* Menu levels array */
+	
+	TAILQ_HEAD(kx_head, kx_menu_level) head_lvls;
 } kx_menu;
 
-
 /* Create menu of 'size' submenus/levels */
-kx_menu *menu_create(kx_menu_dim size);
+//kx_menu *menu_create(kx_menu_dim size);
+kx_menu *
+menu_create(void);
 
 /* Get next available menu id */
-kx_menu_id menu_get_next_id(kx_menu *menu);
+kx_menu_id
+menu_get_next_id(kx_menu *menu);
 
 /* Select next/prev/first item in current level */
-kx_menu_dim menu_item_select(kx_menu *menu, int direction);
+void
+menu_item_select(kx_menu *menu, int direction);
 
 /* Select no'th item in current level */
-kx_menu_dim menu_item_select_by_no(kx_menu *menu, int no);
+kx_menu_dim
+menu_item_select_by_no(kx_menu *menu, int no);
 
 /* Create menu level (submenu) of 'size' items */
-kx_menu_level *menu_level_create(kx_menu *menu, kx_menu_dim size, 
-		kx_menu_level *parent);
+// kx_menu_level *menu_level_create(kx_menu *menu, kx_menu_dim size, 
+// 		kx_menu_level *parent);
+kx_menu_level *
+menu_level_create(kx_menu *menu, kx_menu_level *parent);
 
 /* Add menu item to menu level */
-kx_menu_item *menu_item_add(kx_menu_level *level, kx_menu_id id,
-		char *label, char *description, kx_menu_level *submenu);
+kx_menu_item *
+menu_item_add(kx_menu_level *level, kx_menu_id id, char *label,
+			  char *description, kx_menu_level *submenu);
 
-void menu_item_set_data(kx_menu_item *item, void *data);
+void
+menu_item_set_data(kx_menu_item *item, void *data);
 
-void menu_destroy(kx_menu *menu, int destroy_data);
+void
+menu_destroy(kx_menu *menu, int destroy_data);
 
 
 #endif /* _HAVE_MENU_H_*/
